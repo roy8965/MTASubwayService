@@ -117,8 +117,6 @@ public class LineUtils {
 					lineInfo.setStatus(status);
 				} else { // delay -> not delayed
 					double totalTimeDelayed = lineInfo.getTotalTimeDelayed();
-					System.out.println(lineInfo);
-					System.out.println(lineInfo.getDelayStartTime());
 					delayStartTime = lineInfo.getDelayStartTime() == null ? 
 									 LineUtils.INCEPTION_TIMESTAMP : lineInfo.getDelayStartTime();
 					totalTimeDelayed += curTimestamp.getTime() - delayStartTime.getTime();

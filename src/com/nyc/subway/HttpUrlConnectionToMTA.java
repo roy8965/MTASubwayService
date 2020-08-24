@@ -14,10 +14,6 @@ import java.util.*;
  * http://www.cnblogs.com/angusbao/p/7727649.html
  */
 public class HttpUrlConnectionToMTA {
-	
-	private static String result;
-	private static InputStream is;
-	
     /**
      * 以post或get方式调用对方接口方法，
      * @param pathUrl
@@ -25,7 +21,7 @@ public class HttpUrlConnectionToMTA {
     public static void doPostOrGet(String pathUrl, String data){
         OutputStreamWriter out = null;
         BufferedReader br = null;
-        result = "";
+        String result = "";
         
         try {
             URL url = new URL(pathUrl);
@@ -59,7 +55,7 @@ public class HttpUrlConnectionToMTA {
              * 下面的代码相当于，获取调用第三方http接口后返回的结果
              */
             //获取URLConnection对象对应的输入流
-            is = conn.getInputStream();
+            InputStream is = conn.getInputStream();
             //构造一个字符流缓存
             br = new BufferedReader(new InputStreamReader(is));
             String str = "";

@@ -144,7 +144,6 @@ public class LineUtils {
 		long serviceStartTime = statusMap.get(line).getServiceStartTime().getTime();
 		Timestamp curTimestamp = new Timestamp(System.currentTimeMillis());
 		double totalTime = curTimestamp.getTime() - serviceStartTime;
-		System.out.println(line + ": " + timeDelayed +  " - " + totalTime + " -> " + (1 - timeDelayed / totalTime));
 		double delayedPercentage = totalTime == 0 ? 100 : (1 - timeDelayed / totalTime) * 100.00;
 		String delayedPercentageStr = String.format("%.2f", delayedPercentage) + "%";
 		return delayedPercentageStr;

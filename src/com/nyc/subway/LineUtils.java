@@ -87,7 +87,6 @@ public class LineUtils {
 	}
 	
 	private static void updateLineStatus(String name, String[] props) {
-		
 		String status = parseLineStatus(props[1]).trim();
 		String curDate = props[2].trim() + " " + props[3].trim();         
 		SimpleDateFormat dateFormat = new SimpleDateFormat(LineUtils.MTA_FORMAT);
@@ -101,30 +100,38 @@ public class LineUtils {
 			e.printStackTrace();
 		}
 		
+		Timestamp curTimestamp = new Timestamp(System.currentTimeMillis());
 		if(!statusMap.containsKey(name)) {
-			LineInfo lineInfo = new LineInfo(name, status);
+			LineInfo lineInfo = new LineInfo(name, status, curTimestamp);
 			if("delayed".equals(status)) {
-				lineInfo.setDelayStartTime(delayStartTime);
+				lineInfo.setDelayStartTime(curTimestamp);
 			} 
 			statusMap.put(name, lineInfo);
 		} else {
 			LineInfo lineInfo = statusMap.get(name);
-			if(lineInfo == null) lineInfo = new LineInfo(name, status);
+			if(lineInfo == null) lineInfo = new LineInfo(name, status, curTimestamp);
+			
 			if(!lineInfo.getStatus().equals(status)) {
-				Timestamp curTimestamp = new Timestamp(System.currentTimeMillis());
 				if("delayed".equals(status)) { // not delayed -> delay
 					lineInfo.setDelayStartTime(curTimestamp);
 					lineInfo.setStatus(status);
 				} else { // delay -> not delayed
-					double totalTimeDelayed = lineInfo.getTotalTimeDelayed();
-					delayStartTime = lineInfo.getDelayStartTime() == null ? 
-									 LineUtils.INCEPTION_TIMESTAMP : lineInfo.getDelayStartTime();
+					long totalTimeDelayed = lineInfo.getTotalTimeDelayed();
+					delayStartTime = lineInfo.getDelayStartTime() == null ? curTimestamp : lineInfo.getDelayStartTime();
 					totalTimeDelayed += curTimestamp.getTime() - delayStartTime.getTime();
 					lineInfo.setTotalTimeDelayed(totalTimeDelayed);
 					lineInfo.setDelayStartTime(null);
 					lineInfo.setStatus(status);
 				}
 				lineStatusChangeAlert(name, status);
+			} else {
+				if("delayed".equals(status)) { // delay -> delay
+					long totalTimeDelayed = lineInfo.getTotalTimeDelayed();
+					if(lineInfo.getDelayStartTime() == null) lineInfo.setDelayStartTime(LineUtils.INCEPTION_TIMESTAMP);
+					delayStartTime = lineInfo.getDelayStartTime();
+					long timeDelayed = totalTimeDelayed + (curTimestamp.getTime() - delayStartTime.getTime());
+					lineInfo.setTimeDelayed(timeDelayed);
+				}
 			}
 			statusMap.put(name, lineInfo);
 		}
@@ -133,10 +140,12 @@ public class LineUtils {
 	public static String getUptime(String line) {
 		HttpUrlConnectionToMTA.doPostOrGet(LineUtils.MTA_SERVICE_STATUS_URL, "");
 		if(!statusMap.containsKey(line)) return "N/A";
-		double totalTimeDelayed = statusMap.get(line).getTotalTimeDelayed();
+		double timeDelayed = statusMap.get(line).getTimeDelayed();
+		long serviceStartTime = statusMap.get(line).getServiceStartTime().getTime();
 		Timestamp curTimestamp = new Timestamp(System.currentTimeMillis());
-		double totalTime = curTimestamp.getTime() - LineUtils.INCEPTION_TIMESTAMP.getTime();
-		double delayedPercentage = (1 - totalTimeDelayed / totalTime) * 100;
+		double totalTime = curTimestamp.getTime() - serviceStartTime;
+		System.out.println(line + ": " + timeDelayed +  " - " + totalTime + " -> " + (1 - timeDelayed / totalTime));
+		double delayedPercentage = totalTime == 0 ? 100 : (1 - timeDelayed / totalTime) * 100.00;
 		String delayedPercentageStr = String.format("%.2f", delayedPercentage) + "%";
 		return delayedPercentageStr;
 	}
@@ -176,6 +185,9 @@ public class LineUtils {
 		case "EXPRESS TO LOCAL": 
 			status = "delayed";
 			break;
+		case "SLOW SPEEDS": 
+			status = "delayed";
+			break;
 		case "SOME REROUTES": 
 			status = "delayed";
 			break;
@@ -189,7 +201,7 @@ public class LineUtils {
 			status = "delayed";
 			break;
 		default:
-			status = "N/A";
+			status = statusInfo;
 			break;
 		}
 		

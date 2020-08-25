@@ -13,7 +13,6 @@ public class LineTorchRunner {
             	HttpUrlConnectionToMTA.doPostOrGet(LineUtils.MTA_SERVICE_STATUS_URL, "");
             }
         };
-
         Timer timer = new Timer("MTATimer");// create a new Timer
         timer.scheduleAtFixedRate(timerTask, 10, 10000);// this line starts the timer at the same time its executed
     }
